@@ -1,0 +1,14 @@
+{
+  "n_test": 5430,
+  "accuracy": 0.9945,
+  "f1_macro": 0.9931,
+  "f1_weighted": 0.9945,
+  "precision_macro": 0.9911,
+  "recall_macro": 0.9952,
+  "run_name": "efficientnetb0_coarse",
+  "backbone": "efficientnetb0",
+  "task": "coarse",
+  "img_size": 224,
+  "params": 4052133,
+  "train_seconds": 203
+}

@@ -27,3 +27,4 @@ results/smoke/
 
 # secrets
 .env
+job.log

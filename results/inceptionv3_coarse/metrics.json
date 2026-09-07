@@ -1,0 +1,14 @@
+{
+  "n_test": 5430,
+  "accuracy": 0.9871,
+  "f1_macro": 0.9839,
+  "f1_weighted": 0.9871,
+  "precision_macro": 0.9812,
+  "recall_macro": 0.9867,
+  "run_name": "inceptionv3_coarse",
+  "backbone": "inceptionv3",
+  "task": "coarse",
+  "img_size": 299,
+  "params": 21806882,
+  "train_seconds": 333
+}

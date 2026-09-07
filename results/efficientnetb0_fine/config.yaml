@@ -1,0 +1,29 @@
+run_name: efficientnetb0_fine
+seed: 42
+data:
+  data_dir: data/tfds
+  task: fine
+  img_size: 224
+  batch_size: 32
+  splits:
+    train: train[:80%]
+    val: train[80%:90%]
+    test: train[90%:]
+  augment: true
+  class_weights: balanced
+model:
+  backbone: efficientnetb0
+  weights: imagenet
+  dropout: 0.3
+train:
+  phases:
+  - name: head
+    epochs: 8
+    lr: 0.001
+    unfreeze_top: 0
+  - name: finetune
+    epochs: 8
+    lr: 1.0e-05
+    unfreeze_top: 30
+  early_stopping_patience: 3
+  limit_batches: null

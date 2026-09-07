@@ -1,0 +1,14 @@
+{
+  "n_test": 5430,
+  "accuracy": 0.9987,
+  "f1_macro": 0.9984,
+  "f1_weighted": 0.9987,
+  "precision_macro": 0.9979,
+  "recall_macro": 0.9989,
+  "run_name": "resnet50_coarse",
+  "backbone": "resnet50",
+  "task": "coarse",
+  "img_size": 224,
+  "params": 23591810,
+  "train_seconds": 255
+}

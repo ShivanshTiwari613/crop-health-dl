@@ -1,0 +1,29 @@
+run_name: resnet50_coarse
+seed: 42
+data:
+  data_dir: data/tfds
+  task: coarse
+  img_size: 224
+  batch_size: 32
+  splits:
+    train: train[:80%]
+    val: train[80%:90%]
+    test: train[90%:]
+  augment: true
+  class_weights: balanced
+model:
+  backbone: resnet50
+  weights: imagenet
+  dropout: 0.3
+train:
+  phases:
+  - name: head
+    epochs: 5
+    lr: 0.001
+    unfreeze_top: 0
+  - name: finetune
+    epochs: 5
+    lr: 1.0e-05
+    unfreeze_top: 30
+  early_stopping_patience: 3
+  limit_batches: null

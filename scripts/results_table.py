@@ -6,21 +6,26 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 COLUMNS = [
     "run_name",
-    "backbone",
     "task",
     "img_size",
-    "n_test",
+    "epochs",
     "accuracy",
     "f1_macro",
     "f1_weighted",
+    "train_seconds",
 ]
 
 
 def main():
     runs = []
     for path in sorted(ROOT.glob("results/*/metrics.json")):
+        if path.parent.name == "smoke":
+            continue
         with open(path) as f:
-            runs.append(json.load(f))
+            run = json.load(f)
+        with open(path.parent / "history.csv") as f:
+            run["epochs"] = sum(1 for _ in f) - 1
+        runs.append(run)
     if not runs:
         print("no runs found under results/")
         return

@@ -1,0 +1,14 @@
+{
+  "n_test": 5430,
+  "accuracy": 0.9608,
+  "f1_macro": 0.9473,
+  "f1_weighted": 0.9611,
+  "precision_macro": 0.9413,
+  "recall_macro": 0.9553,
+  "run_name": "inceptionv3_fine",
+  "backbone": "inceptionv3",
+  "task": "fine",
+  "img_size": 299,
+  "params": 21880646,
+  "train_seconds": 433
+}
