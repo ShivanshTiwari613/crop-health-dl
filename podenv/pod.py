@@ -188,7 +188,14 @@ def pod_action(action, pod_id, key, dry_run):
         raise RuntimeError(f"{action} {pod_id} -> {status}: {payload}")
 
 
-def ensure_pod(key, dry_run):
+def ensure_pod(key, dry_run, recreate_if_full=True):
+    """Start the saved pod, creating one if none exists.
+
+    A stopped pod is pinned to its host; if that host is full it cannot
+    start. Recreating elsewhere destroys the volume, so callers that need
+    what is on the volume (collect) pass recreate_if_full=False and retry
+    later instead.
+    """
     public_key = ensure_ssh_key(dry_run)
     pod_id = load_state().get("pod_id")
     pod = get_pod(pod_id, key, dry_run) if pod_id else None
@@ -214,15 +221,18 @@ def ensure_pod(key, dry_run):
     except RuntimeError as e:
         # A stopped pod is pinned to its host; if the host is full it never
         # starts again. Terminate and recreate elsewhere.
-        if "free GPUs" in str(e) or "resources" in str(e):
+        if not ("free GPUs" in str(e) or "resources" in str(e)):
+            sys.exit(str(e))
+        if not recreate_if_full:
+            sys.exit(f"host of pod {pod_id} is full; retry in a few minutes "
+                     "(recreating would destroy the volume and its results)")
+        if True:
             print("host is full, recreating the pod on a new host")
             pod_action("terminate", pod_id, key, dry_run)
             clear_state()
             pod = create_pod(key, public_key, dry_run)
             pod_id = pod["id"]
             save_state({"pod_id": pod_id})
-        else:
-            sys.exit(str(e))
     return pod_id
 
 
@@ -326,10 +336,16 @@ def push(endpoint, dry_run):
 
 
 def pull(endpoint, dry_run, weights=False):
+    """Stream results/ back as a tar over SSH; nothing needs installing on the pod."""
     host, port = endpoint
-    excludes = [] if weights else ["*.keras"]
-    rc = rsync([f"root@{host}:{REMOTE_DIR}/results/"], str(ROOT / "results") + "/",
-               port, dry_run, excludes=excludes)
+    exclude = "" if weights else "--exclude='*.keras'"
+    tar_out = f"cd {REMOTE_DIR} && tar czf - {exclude} results job.log 2>/dev/null"
+    cmd = ["ssh", *ssh_args(port), f"root@{host}", tar_out]
+    if dry_run:
+        print("[dry-run]", " ".join(cmd), "| tar xzf - -C", ROOT)
+        return
+    with subprocess.Popen(cmd, stdout=subprocess.PIPE) as src:
+        rc = subprocess.call(["tar", "xzf", "-", "-C", str(ROOT)], stdin=src.stdout)
     print("pulled results/" if rc == 0 else "pull failed (no results yet?)")
 
 
@@ -447,6 +463,7 @@ def cmd_run(args):
     sys.exit(exit_code)
 
 
+STOP_GRACE_S = 1800
 JOB_LOG = f"{REMOTE_DIR}/job.log"
 JOB_EXIT = f"{REMOTE_DIR}/job.exit"
 
@@ -469,7 +486,9 @@ def cmd_submit(args):
     chain = " && ".join(f"({c})" for c in commands)
     stop = (f'curl -s -o /dev/null -X POST -A {POD_NAME}/pod.py '
             f'-H "Authorization: Bearer $RUNPOD_API_KEY" {API_BASE}/pods/{pod_id}/stop')
-    script = f"rm -f {JOB_EXIT}; ({chain}); echo $? > {JOB_EXIT}; {stop}"
+    # Wait before stopping so a watching laptop can pull results while the
+    # pod is still up; restarting a stopped pod can fail if its host fills.
+    script = f"rm -f {JOB_EXIT}; ({chain}); echo $? > {JOB_EXIT}; sleep {STOP_GRACE_S}; {stop}"
     launch = f"nohup bash -c '{script}' > {JOB_LOG} 2>&1 < /dev/null &"
     remote(endpoint, f"RUNPOD_API_KEY={key or 'dryrun'} {launch}", args.dry_run)
     print(f"submitted: {' && '.join(args.jobs)}")
@@ -483,12 +502,10 @@ def cmd_log(args):
 
 def cmd_collect(args):
     key = require_api_key(args.dry_run)
-    pod_id = ensure_pod(key, args.dry_run)
+    pod_id = ensure_pod(key, args.dry_run, recreate_if_full=False)
     try:
         endpoint = wait_for_ssh(pod_id, key, args.dry_run)
         remote(endpoint, f"cat {JOB_EXIT} 2>/dev/null | sed 's/^/job exit code: /'", args.dry_run)
-        rsync([f"root@{endpoint[0]}:{JOB_LOG}"], str(ROOT / "results" / "job.log"),
-              endpoint[1], args.dry_run)
         pull(endpoint, args.dry_run, args.weights)
     finally:
         pod_action("stop", pod_id, key, args.dry_run)
