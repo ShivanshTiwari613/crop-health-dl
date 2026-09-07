@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import tensorflow as tf
 
-from src.data import PREPROCESS, balanced_class_weights, coarse_labels
+from src.data import PREPROCESS, augment, balanced_class_weights, coarse_labels
 from src.models import BACKBONES, build_model, unfreeze_top
 
 IMG_SIZE = 96  # InceptionV3 refuses inputs smaller than 75
@@ -18,6 +18,13 @@ def test_coarse_labels_from_class_names():
 def test_balanced_class_weights_matches_sklearn_rule():
     weights = balanced_class_weights([10, 30])
     assert weights == {0: 2.0, 1: 40 / 60}
+
+
+def test_augment_keeps_pixel_range_and_shape():
+    image = tf.random.uniform((IMG_SIZE, IMG_SIZE, 3), 0, 255)
+    out = augment(image)
+    assert out.shape == image.shape
+    assert float(tf.reduce_min(out)) >= 0 and float(tf.reduce_max(out)) <= 255
 
 
 def test_every_backbone_has_a_preprocess_function():

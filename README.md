@@ -24,7 +24,7 @@ Class balance is strongly skewed (e.g. thousands of tomato images vs a few hundr
 ## Method
 
 - ImageNet-pretrained backbone (`include_top=False`) → GlobalAveragePooling → Dropout(0.3) → softmax.
-- Augmentation (flip / rotate / zoom / contrast) lives **inside** the model so it is only active in training.
+- Augmentation (flips, 90° rotations, brightness, contrast) is applied to raw pixels in the training pipeline, before the backbone's own preprocessing.
 - Phase 1: backbone frozen, train the head with Adam 1e-3. Phase 2: unfreeze the top 30 backbone layers (BatchNorm stays frozen) and continue at 1e-5. Early stopping on validation accuracy, best weights restored.
 - Everything is one YAML in `configs/`.
 
@@ -52,6 +52,8 @@ make lint    # ruff + black
 
 Apple Silicon: uncomment `tensorflow-metal` in `requirements.txt` for GPU acceleration.
 
+To train on a rented GPU instead, `podenv/` drives a RunPod pod end to end (`python3 podenv/pod.py run all`); see `podenv/README.md`.
+
 ## Limitations
 
 - **Not the paper's data.** The paper used drone/IoT field imagery with three classes (healthy / stressed / diseased). PlantVillage is lab-style single-leaf photos and has no "stressed" (abiotic) class, so only the healthy/diseased boundary is comparable. Field-vs-lab domain shift is the main reason PlantVillage accuracies are optimistic.
@@ -63,8 +65,8 @@ Apple Silicon: uncomment `tensorflow-metal` in `requirements.txt` for GPU accele
 
 ```
 data/download.py     tfds download only
-src/data.py          tfds pipeline, fine/coarse labels, class weights
-src/models.py        backbones, head, augmentation, staged unfreezing
+src/data.py          tfds pipeline, fine/coarse labels, augmentation, class weights
+src/models.py        backbones, head, staged unfreezing
 src/train.py         python -m src.train --config configs/X.yaml
 src/evaluate.py      metrics.json, confusion matrix, per-class report
 scripts/results_table.py   results/RESULTS.md

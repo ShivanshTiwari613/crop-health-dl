@@ -50,6 +50,15 @@ def balanced_class_weights(counts):
     return {i: float(w) for i, w in enumerate(weights)}
 
 
+def augment(image):
+    image = tf.image.random_flip_left_right(image)
+    image = tf.image.random_flip_up_down(image)
+    image = tf.image.rot90(image, k=tf.random.uniform([], 0, 4, dtype=tf.int32))
+    image = tf.image.random_brightness(image, max_delta=25.0)
+    image = tf.image.random_contrast(image, 0.9, 1.1)
+    return tf.clip_by_value(image, 0.0, 255.0)
+
+
 def count_labels(split, data_dir, label_map):
     # Skip image decoding: we only want the label column.
     ds = tfds.load(
@@ -93,15 +102,22 @@ def load_datasets(cfg):
 
     lookup = tf.constant(label_map)
     preprocess = PREPROCESS[cfg["model"]["backbone"]]
+    augment_enabled = data_cfg.get("augment", True)
 
-    def prepare(image, label):
+    def prepare(image, label, training):
         image = tf.image.resize(tf.cast(image, tf.float32), (img_size, img_size))
+        if training and augment_enabled:
+            image = augment(image)
+        # Augment on raw 0-255 pixels first: the backbone preprocessing maps
+        # them into ranges that the augmentation ops would clip.
         return preprocess(image), tf.gather(lookup, label)
 
     def pipeline(ds, shuffle):
         if shuffle:
             ds = ds.shuffle(10_000, seed=seed)
-        ds = ds.map(prepare, num_parallel_calls=tf.data.AUTOTUNE).batch(batch_size)
+        ds = ds.map(
+            lambda x, y: prepare(x, y, training=shuffle), num_parallel_calls=tf.data.AUTOTUNE
+        ).batch(batch_size)
         limit = cfg["train"].get("limit_batches")
         if limit:
             ds = ds.take(limit)

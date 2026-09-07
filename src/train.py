@@ -70,7 +70,6 @@ def train(cfg, out_dir):
         img_size=cfg["data"]["img_size"],
         dropout=model_cfg.get("dropout", 0.3),
         weights=model_cfg.get("weights", "imagenet"),
-        augment=cfg["data"].get("augment", True),
     )
 
     patience = cfg["train"].get("early_stopping_patience", 3)

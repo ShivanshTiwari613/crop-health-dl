@@ -9,19 +9,7 @@ BACKBONES = {
 }
 
 
-def augmentation():
-    return tf.keras.Sequential(
-        [
-            tf.keras.layers.RandomFlip("horizontal_and_vertical"),
-            tf.keras.layers.RandomRotation(0.1),
-            tf.keras.layers.RandomZoom(0.1),
-            tf.keras.layers.RandomContrast(0.1),
-        ],
-        name="augment",
-    )
-
-
-def build_model(backbone, num_classes, img_size, dropout=0.3, weights="imagenet", augment=True):
+def build_model(backbone, num_classes, img_size, dropout=0.3, weights="imagenet"):
     if backbone not in BACKBONES:
         raise ValueError(f"backbone must be one of {sorted(BACKBONES)}, got {backbone!r}")
 
@@ -34,11 +22,10 @@ def build_model(backbone, num_classes, img_size, dropout=0.3, weights="imagenet"
     base.trainable = False
 
     inputs = tf.keras.Input((img_size, img_size, 3), name="image")
-    x = augmentation()(inputs) if augment else inputs
     # training=False keeps BatchNorm in inference mode even after layers are
     # unfrozen; updating BN statistics on small batches destroys the
     # pretrained features.
-    x = base(x, training=False)
+    x = base(inputs, training=False)
     x = tf.keras.layers.GlobalAveragePooling2D()(x)
     x = tf.keras.layers.Dropout(dropout)(x)
     outputs = tf.keras.layers.Dense(num_classes, activation="softmax")(x)
