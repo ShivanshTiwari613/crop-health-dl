@@ -24,3 +24,6 @@ dist/
 .vscode/
 # smoke runs are sanity checks, never results
 results/smoke/
+
+# secrets
+.env
