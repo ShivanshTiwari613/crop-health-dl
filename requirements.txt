@@ -1,0 +1,13 @@
+tensorflow>=2.16,<2.21
+tensorflow-datasets>=4.9
+importlib_resources  # tfds 4.9.x imports it but does not declare it
+scikit-learn>=1.4
+pyyaml>=6
+matplotlib>=3.8
+pandas>=2.2
+# dev
+pytest>=8
+ruff>=0.5
+black>=24
+# optional Apple-Silicon GPU acceleration (uncomment if you want it):
+# tensorflow-metal

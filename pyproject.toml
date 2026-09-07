@@ -1,0 +1,21 @@
+[project]
+name = "crop-health-dl"
+version = "0.1.0"
+description = "Transfer-learning CNNs (ResNet50 / InceptionV3 / EfficientNet) for plant-health classification. Open re-implementation of Mishra, Tiwari, Yadav & Kumar, IEEE ETCOM 2025."
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

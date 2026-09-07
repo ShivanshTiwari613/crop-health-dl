@@ -1,0 +1,26 @@
+# data — never commit raw datasets
+data/tfds/
+data/downloads/
+data/*.zip
+*.tfrecord*
+# runs — keep metrics/plots, drop weights
+results/**/*.keras
+results/**/*.h5
+results/**/checkpoints/
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+# notebooks
+.ipynb_checkpoints/
+# os / ide
+.DS_Store
+.idea/
+.vscode/
+# smoke runs are sanity checks, never results
+results/smoke/
